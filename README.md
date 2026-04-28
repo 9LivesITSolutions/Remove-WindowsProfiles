@@ -1,30 +1,36 @@
 # windows-profile-cleanup
 
-> PowerShell tool for safe bulk removal of Windows user profiles with built-in SID-based exclusions.
+> PowerShell tool for safe removal of Windows user profiles with SID-based exclusions, targeted deletion, and multi-machine WinRM support.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.0.0-informational.svg)](CHANGELOG.md)
-[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
+[![Version](https://img.shields.io/badge/version-3.9.0-informational.svg)](CHANGELOG.md)
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B%20%7C%207%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
 
 ---
 
 ## Overview
 
-`Remove-WindowsProfiles.ps1` removes user profiles from Windows machines using `Win32_UserProfile` WMI.  
-Built-in and system accounts are always excluded based on their SID structure, never by name — making the tool fully locale-independent (works on French, English, and any other Windows language).  
-Supports interactive confirmation, bulk `-All` mode, dry-run via `-WhatIf`, and remote machine targeting.
+`Remove-WindowsProfiles.ps1` removes Windows user profiles via `Win32_UserProfile` CIM. It operates in three modes:
+
+- **Local** — runs directly on the current machine
+- **Single remote** — connects to one machine via WinRM CimSession
+- **Multi-machine** — parallel WinRM sessions across a list of targets, with per-machine logs and a CSV report
+
+System and built-in accounts are always protected by SID structure, never by name — fully locale-independent across French, English, and any other Windows language.
 
 ---
 
 ## Features
 
-- **SID-based exclusion** — identifies system accounts by SID well-known values and RIDs, not by name
-- **Pre-computed exclusion HashSet** — `Win32_UserAccount` queried once before profile loop; O(1) lookup per profile
-- **Safety net** — secondary prefix-based detection for virtual/service accounts without `UserAccount` entries
-- **Remote support** — target any machine via `-ComputerName` (requires WinRM or DCOM)
-- **Flexible exclusions** — mix SID strings, name wildcards in `-Exclude`
-- **WhatIf support** — full dry-run mode via PowerShell's native `-WhatIf`
+- **SID-based exclusion** — system accounts identified by well-known SIDs and built-in RIDs (500/501/503/504), never by name
+- **Pre-computed exclusion HashSet** — `Win32_UserAccount` queried once; O(1) lookup per profile in the classification loop
+- **Targeted deletion** — `-Username` restricts removal to specific accounts or SIDs (wildcards accepted)
+- **Flexible exclusions** — `-Exclude` accepts SID strings and name wildcards to protect additional accounts
+- **Multi-machine** — parallel WinRM sessions with configurable throttle, per-machine log files, consolidated CSV report
+- **Self-deploying** — copies itself to remote targets via `Copy-Item -ToSession`, cleans up after execution
+- **WhatIf** — dry-run mode as a plain switch, no `SupportsShouldProcess` propagation side-effects
 - **Interactive mode** — per-profile Yes/No/Quit prompt when `-All` is not specified
+- **PS5.1 and PS7** — tested on both; uses `Get-CimInstance` and `Remove-CimInstance` throughout
 
 ---
 
@@ -32,76 +38,109 @@ Supports interactive confirmation, bulk `-All` mode, dry-run via `-WhatIf`, and 
 
 | Dependency | Version |
 |------------|---------|
-| PowerShell | >= 5.1  |
-| WMI        | Built-in (Win32_UserProfile, Win32_UserAccount) |
-| Privileges | Local Administrator (or remote admin rights) |
+| PowerShell | 5.1 or 7+ |
+| CIM/WMI | Built-in (`Win32_UserProfile`, `Win32_UserAccount`) |
+| Privileges | Local Administrator, or remote admin with WinRM access |
 
-> PowerShell 7+ (pwsh) is supported but not required.
+WinRM must be enabled on remote targets:
+```powershell
+# Run as admin on each target, or deploy via GPO
+Enable-PSRemoting -Force
+```
 
 ---
 
 ## Installation
 
-```bash
-# Clone the repository
+```powershell
 git clone https://github.com/[OWNER]/windows-profile-cleanup.git
 cd windows-profile-cleanup
 ```
 
-No additional dependencies. Copy `Remove-WindowsProfiles.ps1` to your target machine or run remotely.
+No external dependencies. The script is self-contained.
 
 ---
 
 ## Usage
 
 ```powershell
-# Dry-run — see what would be removed without touching anything
+# Dry-run on local machine
 .\Remove-WindowsProfiles.ps1 -WhatIf
 
-# Interactive mode — confirm each profile individually
-.\Remove-WindowsProfiles.ps1 -Exclude "svc_*","adminlocal"
+# Remove a specific profile locally
+.\Remove-WindowsProfiles.ps1 -Username "jdoe" -All
 
-# Bulk mode — remove all non-system profiles without prompts
-.\Remove-WindowsProfiles.ps1 -All -Exclude "svc_*","S-1-5-21-111-222-333-1001"
+# Remove a specific profile on a remote machine
+.\Remove-WindowsProfiles.ps1 -ComputerName "RDHPRD06" -Username "jdoe" -All
 
-# Remote machine
-.\Remove-WindowsProfiles.ps1 -All -ComputerName "WORKSTATION-01"
+# Preview removal on a remote machine
+.\Remove-WindowsProfiles.ps1 -ComputerName "RDHPRD06" -Username "jdoe" -WhatIf
+
+# Bulk removal on remote machine, exclude service accounts
+.\Remove-WindowsProfiles.ps1 -ComputerName "RDHPRD06" -All -Exclude "svc_*"
+
+# Interactive mode (confirm each profile)
+.\Remove-WindowsProfiles.ps1 -ComputerName "RDHPRD06" -Exclude "svc_*"
+
+# Multi-machine from inline list
+.\Remove-WindowsProfiles.ps1 -ComputerName "PC-001","PC-002","PC-003" -All -Exclude "svc_*"
+
+# Multi-machine from file with credentials
+.\Remove-WindowsProfiles.ps1 -TargetList ".\targets.txt" -All `
+    -Exclude "svc_*" -Credential (Get-Credential) -ThrottleLimit 5
 ```
 
 ---
 
-## Configuration
+## Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `-Exclude` | `string[]` | SID strings or name wildcards to exclude (e.g. `"svc_*"`, `"S-1-5-21-...-1105"`) |
-| `-All` | `switch` | Suppress per-profile confirmation — remove all candidates silently |
-| `-WhatIf` | `switch` | Dry-run — simulate without deleting |
-| `-ComputerName` | `string` | Remote target hostname (default: local machine) |
-| `-Verbose` | `switch` | Show pre-computation details (SIDs added to exclusion set) |
+| `-ComputerName` | `string[]` | Target hostname(s). One = single mode; two or more = multi-machine WinRM mode. Default: local machine. |
+| `-TargetList` | `string` | Path to a text file with one hostname per line (`#` lines ignored). Activates multi-machine mode. |
+| `-Username` | `string[]` | Restrict removal to specific account names or SIDs. Wildcards accepted. |
+| `-Exclude` | `string[]` | Account names (wildcards) or SID strings to always skip. |
+| `-All` | `switch` | Remove all candidates without per-profile confirmation. Required for unattended runs. |
+| `-WhatIf` | `switch` | Simulate without deleting. Lists all candidates that would be removed. |
+| `-Credential` | `PSCredential` | Explicit credentials for remote sessions (default: Kerberos pass-through). |
+| `-ThrottleLimit` | `int` | Max simultaneous WinRM sessions in multi-machine mode (default: 10, max: 50). |
+| `-LogPath` | `string` | Directory for per-machine logs and CSV report in multi-machine mode (default: `.\Logs`). |
+| `-RemoteTempPath` | `string` | Staging directory on remote machines (default: `C:\Windows\Temp`). |
+| `-Verbose` | `switch` | Show SID pre-computation details. |
 
 ---
 
 ## How It Works
 
-Execution is split into 3 phases:
-
 ```
-Phase 1 — Build-ExcludedSIDSet()
-  ├── Load NT AUTHORITY well-known SIDs into HashSet
-  ├── Query Win32_UserAccount (LocalAccount=True, SIDType=1)
-  ├── Filter by built-in RIDs {500, 501, 503, 504} → inject into HashSet
-  └── Inject explicit -Exclude SID entries
+Phase 1 -- Build-ExcludedSIDSet()  [runs once, before any profile is touched]
+  |- Load NT AUTHORITY well-known SIDs into HashSet
+  |- Query Win32_UserAccount (LocalAccount=True, SIDType=1)
+  |- Filter by built-in RIDs {500, 501, 503, 504} -> inject real SIDs into HashSet
+  '- Inject explicit -Exclude SID entries
 
-Phase 2 — Query Win32_UserProfile (single WMI call)
+Phase 2 -- Load Win32_UserProfile  [single CIM query]
 
-Phase 3 — Classify each profile
-  ├── ExcludedSIDs.Contains(SID) → O(1) → skip
-  ├── Test-IsSystemByPrefix()    → safety net for virtual accounts
-  └── Resolve name + apply name-pattern exclusions
+Phase 3 -- Classify each profile
+  |- ExcludedSIDs.Contains(SID)  -> O(1) -> SYSTEM, skip
+  |- Test-IsSystemByPrefix()     -> safety net for NT SERVICE, IIS, Hyper-V accounts
+  |- Resolve-AccountName()       -> only for non-system profiles
+  |- Apply -Exclude name patterns
+  |- Apply -Username filter      -> restrict candidates if specified
+  '- Apply -All / interactive / -WhatIf to final candidate list
 ```
 
-Built-in accounts (Administrator/Administrateur RID 500, Guest/Invité RID 501, DefaultAccount RID 503, WDAGUtilityAccount RID 504) are excluded regardless of their display name or system language.
+Built-in accounts are excluded by RID regardless of their display name: RID 500 (Administrator/Administrateur/...), 501 (Guest/Invite/...), 503 (DefaultAccount), 504 (WDAGUtilityAccount).
+
+---
+
+## Multi-Machine Output
+
+In multi-machine mode, the script produces:
+
+- **Console** — per-machine status line (Success / PartialFailure / Unreachable) with removed/failed/skipped counts
+- **Log files** — `Logs\<ComputerName>_<timestamp>.log` for each machine
+- **CSV report** — `Logs\report_<timestamp>.csv` with all results consolidated
 
 ---
 
@@ -109,11 +148,12 @@ Built-in accounts (Administrator/Administrateur RID 500, Guest/Invité RID 501, 
 
 ```
 windows-profile-cleanup/
-├── Remove-WindowsProfiles.ps1   # Main script
-├── README.md
-├── CHANGELOG.md
-├── LICENSE
-└── .gitignore
+|-- Remove-WindowsProfiles.ps1   # Main script (local, single-remote, multi-machine)
+|-- targets.txt                  # Example target list for -TargetList
+|-- README.md
+|-- CHANGELOG.md
+|-- LICENSE
+'-- .gitignore
 ```
 
 ---
@@ -132,4 +172,4 @@ Please follow [Conventional Commits](https://www.conventionalcommits.org/) for c
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License -- see the [LICENSE](LICENSE) file for details.
