@@ -1,4 +1,4 @@
-# windows-profile-cleanup
+# Remove-WindowsProfiles
 
 > PowerShell tool for safe removal of Windows user profiles with SID-based exclusions, targeted deletion, and multi-machine WinRM support.
 
