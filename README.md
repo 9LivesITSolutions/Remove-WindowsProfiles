@@ -1,4 +1,4 @@
-# Remove-WindowsProfiles
+# windows-profile-cleanup
 
 > PowerShell tool for safe removal of Windows user profiles with SID-based exclusions, targeted deletion, and multi-machine WinRM support.
 
@@ -71,16 +71,16 @@ No external dependencies. The script is self-contained.
 .\Remove-WindowsProfiles.ps1 -Username "jdoe" -All
 
 # Remove a specific profile on a remote machine
-.\Remove-WindowsProfiles.ps1 -ComputerName "RDHPRD06" -Username "jdoe" -All
+.\Remove-WindowsProfiles.ps1 -ComputerName "WORKSTATION-01" -Username "jdoe" -All
 
 # Preview removal on a remote machine
-.\Remove-WindowsProfiles.ps1 -ComputerName "RDHPRD06" -Username "jdoe" -WhatIf
+.\Remove-WindowsProfiles.ps1 -ComputerName "WORKSTATION-01" -Username "jdoe" -WhatIf
 
 # Bulk removal on remote machine, exclude service accounts
-.\Remove-WindowsProfiles.ps1 -ComputerName "RDHPRD06" -All -Exclude "svc_*"
+.\Remove-WindowsProfiles.ps1 -ComputerName "WORKSTATION-01" -All -Exclude "svc_*"
 
 # Interactive mode (confirm each profile)
-.\Remove-WindowsProfiles.ps1 -ComputerName "RDHPRD06" -Exclude "svc_*"
+.\Remove-WindowsProfiles.ps1 -ComputerName "WORKSTATION-01" -Exclude "svc_*"
 
 # Multi-machine from inline list
 .\Remove-WindowsProfiles.ps1 -ComputerName "PC-001","PC-002","PC-003" -All -Exclude "svc_*"
