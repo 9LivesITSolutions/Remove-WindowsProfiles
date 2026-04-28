@@ -1,0 +1,55 @@
+# ─── PowerShell ───────────────────────────────────────────────────────────────
+
+# Modules locaux téléchargés
+Modules/
+*.psd1.bak
+
+# Fichiers de session et historique
+*.pssc
+*.pssc.bak
+Profile.ps1
+
+# Résultats de tests Pester
+TestResults/
+*.xml
+
+# ─── Secrets & configuration locale ──────────────────────────────────────────
+
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+
+# ─── OS & Editors ─────────────────────────────────────────────────────────────
+
+# macOS
+.DS_Store
+.AppleDouble
+._*
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# Editors
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+tmp/
+temp/

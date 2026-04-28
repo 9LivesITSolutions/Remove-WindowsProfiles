@@ -1,0 +1,7 @@
+# Target machine list — one hostname or IP per line
+# Lines starting with # are ignored
+
+# Example entries:
+# WORKSTATION-01
+# WORKSTATION-02
+# 192.168.10.55
