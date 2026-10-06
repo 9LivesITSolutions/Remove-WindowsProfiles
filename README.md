@@ -1,10 +1,12 @@
-# windows-profile-cleanup
+# Remove-WindowsProfiles
 
 > PowerShell tool for safe removal of Windows user profiles with SID-based exclusions, targeted deletion, and multi-machine WinRM support.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-3.9.0-informational.svg)](CHANGELOG.md)
 [![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B%20%7C%207%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
+
+[Version française](README.fr.md)
 
 ---
 
@@ -53,8 +55,8 @@ Enable-PSRemoting -Force
 ## Installation
 
 ```powershell
-git clone https://github.com/[OWNER]/windows-profile-cleanup.git
-cd windows-profile-cleanup
+git clone https://github.com/9LivesITSolutions/Remove-WindowsProfiles.git
+cd Remove-WindowsProfiles
 ```
 
 No external dependencies. The script is self-contained.
@@ -147,10 +149,11 @@ In multi-machine mode, the script produces:
 ## Project Structure
 
 ```
-windows-profile-cleanup/
+Remove-WindowsProfiles/
 |-- Remove-WindowsProfiles.ps1   # Main script (local, single-remote, multi-machine)
 |-- targets.txt                  # Example target list for -TargetList
 |-- README.md
+|-- README.fr.md
 |-- CHANGELOG.md
 |-- LICENSE
 '-- .gitignore
@@ -158,12 +161,18 @@ windows-profile-cleanup/
 
 ---
 
+## See also
+
+[Invoke-ProfilePurge](https://github.com/9LivesITSolutions/Invoke-ProfilePurge) removes stale profiles by inactivity age across a server fleet (HTML report, Event Log). `Remove-WindowsProfiles` targets specific accounts or SIDs instead.
+
+---
+
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/[feature-name]`)
-3. Commit your changes (`git commit -m 'feat: add [feature-name]'`)
-4. Push to the branch (`git push origin feature/[feature-name]`)
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes (`git commit -m 'feat: add my-feature'`)
+4. Push to the branch (`git push origin feature/my-feature`)
 5. Open a Pull Request
 
 Please follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
@@ -172,4 +181,8 @@ Please follow [Conventional Commits](https://www.conventionalcommits.org/) for c
 
 ## License
 
-This project is licensed under the MIT License -- see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+Maintained by **9 Lives IT Solutions** — Healthcare IT & Infrastructure Automation.
